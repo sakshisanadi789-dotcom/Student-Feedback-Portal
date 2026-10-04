@@ -1,0 +1,72 @@
+{
+  "name": "Student Feedback Portal · Local",
+  "values": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "studentId",
+      "value": "1",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "teacherId",
+      "value": "1",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "courseId",
+      "value": "1",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "subjectId",
+      "value": "1",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "questionId",
+      "value": "1",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "formId",
+      "value": "1",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "responseId",
+      "value": "1",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "roleId",
+      "value": "1",
+      "type": "default",
+      "enabled": true
+    }
+  ],
+  "_postman_variable_scope": "environment"
+}

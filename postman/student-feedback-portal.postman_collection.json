@@ -1,0 +1,4597 @@
+{
+  "info": {
+    "name": "Student Feedback Portal API",
+    "description": "REST API coverage for authentication, academic records, feedback forms, submissions, dashboards, and reports. Import the matching environment, run the login request first, then use the captured JWT for protected requests.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api"
+    }
+  ],
+  "item": [
+    {
+      "name": "01 - Authentication",
+      "item": [
+        {
+          "name": "Register student",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"Taylor Sample\",\n  \"email\": \"taylor.sample@example.edu\",\n  \"password\": \"SamplePass@123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Registration returns a created response', () => pm.expect(pm.response.code).to.be.oneOf([201, 409]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@northstar.edu\",\n  \"password\": \"Campus@2026\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login succeeds', () => pm.expect(pm.response.code).to.equal(200));",
+                  "const payload = pm.response.json();",
+                  "pm.test('Token is returned', () => pm.expect(payload.data.token).to.be.a('string').and.not.empty);",
+                  "pm.environment.set('token', payload.data.token);",
+                  "pm.environment.set('userId', String(payload.data.user.id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Current user",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                  "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "logout"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                  "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02 - Users",
+      "item": [
+        {
+          "name": "User CRUD and query options",
+          "item": [
+            {
+              "name": "Get all · pagination",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/users?page=1&limit=10",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "users"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Search",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/users?search=sample",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "users"
+                  ],
+                  "query": [
+                    {
+                      "key": "search",
+                      "value": "sample"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Filter",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/users?status=active",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "users"
+                  ],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "active"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Sort",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/users?sortBy=id&sortOrder=desc",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "users"
+                  ],
+                  "query": [
+                    {
+                      "key": "sortBy",
+                      "value": "id"
+                    },
+                    {
+                      "key": "sortOrder",
+                      "value": "desc"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Get by ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/users/{{userId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "users",
+                    "{{userId}}"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"role_id\": 3,\n  \"full_name\": \"Taylor Sample\",\n  \"email\": \"taylor.sample@example.edu\",\n  \"password\": \"SamplePass@123\",\n  \"status\": \"active\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/users",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "users"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Request includes required fields: role_id, full_name, email, password', () => pm.expect(JSON.parse(pm.request.body.raw)).to.include.all.keys('role_id', 'full_name', 'email', 'password'));"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"role_id\": 3,\n  \"full_name\": \"Taylor Sample\",\n  \"email\": \"taylor.sample@example.edu\",\n  \"password\": \"SamplePass@123\",\n  \"status\": \"active\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/users/{{userId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "users",
+                    "{{userId}}"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Request includes required fields: role_id, full_name, email, password', () => pm.expect(JSON.parse(pm.request.body.raw)).to.include.all.keys('role_id', 'full_name', 'email', 'password'));"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Patch",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"role_id\": 3,\n  \"full_name\": \"Taylor Sample\",\n  \"email\": \"taylor.sample@example.edu\",\n  \"password\": \"SamplePass@123\",\n  \"status\": \"active\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/users/{{userId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "users",
+                    "{{userId}}"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Request includes required fields: role_id, full_name, email, password', () => pm.expect(JSON.parse(pm.request.body.raw)).to.include.all.keys('role_id', 'full_name', 'email', 'password'));"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Delete",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/users/{{userId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "users",
+                    "{{userId}}"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Role CRUD and query options",
+          "item": [
+            {
+              "name": "Get all · pagination",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/roles?page=1&limit=10",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "roles"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Search",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/roles?search=sample",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "roles"
+                  ],
+                  "query": [
+                    {
+                      "key": "search",
+                      "value": "sample"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Filter",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/roles?status=active",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "roles"
+                  ],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "active"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Sort",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/roles?sortBy=id&sortOrder=desc",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "roles"
+                  ],
+                  "query": [
+                    {
+                      "key": "sortBy",
+                      "value": "id"
+                    },
+                    {
+                      "key": "sortOrder",
+                      "value": "desc"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Get by ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/roles/{{roleId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "roles",
+                    "{{roleId}}"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"reviewer\",\n  \"description\": \"Read-only review access\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/roles",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "roles"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Request includes required fields: name', () => pm.expect(JSON.parse(pm.request.body.raw)).to.include.all.keys('name'));"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"reviewer\",\n  \"description\": \"Read-only review access\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/roles/{{roleId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "roles",
+                    "{{roleId}}"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Request includes required fields: name', () => pm.expect(JSON.parse(pm.request.body.raw)).to.include.all.keys('name'));"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Patch",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"reviewer\",\n  \"description\": \"Read-only review access\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/roles/{{roleId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "roles",
+                    "{{roleId}}"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Request includes required fields: name', () => pm.expect(JSON.parse(pm.request.body.raw)).to.include.all.keys('name'));"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Delete",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/roles/{{roleId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "roles",
+                    "{{roleId}}"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Required fields validation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/students",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "students"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Missing required fields return 422', () => pm.expect(pm.response.code).to.equal(422));",
+                  "pm.test('Validation error uses standard error response', () => pm.expect(pm.response.json()).to.include({ success: false, error: 'VALIDATION_ERROR' }));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03 - Dashboard",
+      "item": [
+        {
+          "name": "Dashboard summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/dashboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dashboard"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                  "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04 - Students",
+      "item": [
+        {
+          "name": "Student CRUD and query options",
+          "item": [
+            {
+              "name": "Get all · pagination",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/students?page=1&limit=10",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "students"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Search",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/students?search=sample",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "students"
+                  ],
+                  "query": [
+                    {
+                      "key": "search",
+                      "value": "sample"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Filter",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/students?status=active",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "students"
+                  ],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "active"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Sort",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/students?sortBy=id&sortOrder=desc",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "students"
+                  ],
+                  "query": [
+                    {
+                      "key": "sortBy",
+                      "value": "id"
+                    },
+                    {
+                      "key": "sortOrder",
+                      "value": "desc"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Get by ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/students/{{studentId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "students",
+                    "{{studentId}}"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"student_code\": \"STU-30001\",\n  \"full_name\": \"Taylor Sample\",\n  \"email\": \"taylor.sample@example.edu\",\n  \"course_id\": 1,\n  \"enrollment_year\": 2026,\n  \"status\": \"active\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/students",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "students"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Request includes required fields: student_code, full_name, email', () => pm.expect(JSON.parse(pm.request.body.raw)).to.include.all.keys('student_code', 'full_name', 'email'));"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"student_code\": \"STU-30001\",\n  \"full_name\": \"Taylor Sample\",\n  \"email\": \"taylor.sample@example.edu\",\n  \"course_id\": 1,\n  \"enrollment_year\": 2026,\n  \"status\": \"active\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/students/{{studentId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "students",
+                    "{{studentId}}"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Request includes required fields: student_code, full_name, email', () => pm.expect(JSON.parse(pm.request.body.raw)).to.include.all.keys('student_code', 'full_name', 'email'));"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Patch",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"student_code\": \"STU-30001\",\n  \"full_name\": \"Taylor Sample\",\n  \"email\": \"taylor.sample@example.edu\",\n  \"course_id\": 1,\n  \"enrollment_year\": 2026,\n  \"status\": \"active\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/students/{{studentId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "students",
+                    "{{studentId}}"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Request includes required fields: student_code, full_name, email', () => pm.expect(JSON.parse(pm.request.body.raw)).to.include.all.keys('student_code', 'full_name', 'email'));"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Delete",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/students/{{studentId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "students",
+                    "{{studentId}}"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "05 - Teachers",
+      "item": [
+        {
+          "name": "Teacher CRUD and query options",
+          "item": [
+            {
+              "name": "Get all · pagination",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/teachers?page=1&limit=10",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "teachers"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Search",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/teachers?search=sample",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "teachers"
+                  ],
+                  "query": [
+                    {
+                      "key": "search",
+                      "value": "sample"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Filter",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/teachers?status=active",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "teachers"
+                  ],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "active"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Sort",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/teachers?sortBy=id&sortOrder=desc",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "teachers"
+                  ],
+                  "query": [
+                    {
+                      "key": "sortBy",
+                      "value": "id"
+                    },
+                    {
+                      "key": "sortOrder",
+                      "value": "desc"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Get by ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/teachers/{{teacherId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "teachers",
+                    "{{teacherId}}"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"employee_code\": \"EMP-1300\",\n  \"full_name\": \"Morgan Sample\",\n  \"email\": \"morgan.sample@northstar.edu\",\n  \"department\": \"Computer Science\",\n  \"status\": \"active\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/teachers",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "teachers"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Request includes required fields: employee_code, full_name, email', () => pm.expect(JSON.parse(pm.request.body.raw)).to.include.all.keys('employee_code', 'full_name', 'email'));"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"employee_code\": \"EMP-1300\",\n  \"full_name\": \"Morgan Sample\",\n  \"email\": \"morgan.sample@northstar.edu\",\n  \"department\": \"Computer Science\",\n  \"status\": \"active\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/teachers/{{teacherId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "teachers",
+                    "{{teacherId}}"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Request includes required fields: employee_code, full_name, email', () => pm.expect(JSON.parse(pm.request.body.raw)).to.include.all.keys('employee_code', 'full_name', 'email'));"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Patch",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"employee_code\": \"EMP-1300\",\n  \"full_name\": \"Morgan Sample\",\n  \"email\": \"morgan.sample@northstar.edu\",\n  \"department\": \"Computer Science\",\n  \"status\": \"active\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/teachers/{{teacherId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "teachers",
+                    "{{teacherId}}"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Request includes required fields: employee_code, full_name, email', () => pm.expect(JSON.parse(pm.request.body.raw)).to.include.all.keys('employee_code', 'full_name', 'email'));"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Delete",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/teachers/{{teacherId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "teachers",
+                    "{{teacherId}}"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "06 - Courses",
+      "item": [
+        {
+          "name": "Course CRUD and query options",
+          "item": [
+            {
+              "name": "Get all · pagination",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/courses?page=1&limit=10",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "courses"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Search",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/courses?search=sample",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "courses"
+                  ],
+                  "query": [
+                    {
+                      "key": "search",
+                      "value": "sample"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Filter",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/courses?status=active",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "courses"
+                  ],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "active"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Sort",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/courses?sortBy=id&sortOrder=desc",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "courses"
+                  ],
+                  "query": [
+                    {
+                      "key": "sortBy",
+                      "value": "id"
+                    },
+                    {
+                      "key": "sortOrder",
+                      "value": "desc"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Get by ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/courses/{{courseId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "courses",
+                    "{{courseId}}"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"course_code\": \"EDU-BA\",\n  \"name\": \"Education Studies\",\n  \"department\": \"School of Education\",\n  \"status\": \"active\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/courses",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "courses"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Request includes required fields: course_code, name', () => pm.expect(JSON.parse(pm.request.body.raw)).to.include.all.keys('course_code', 'name'));"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"course_code\": \"EDU-BA\",\n  \"name\": \"Education Studies\",\n  \"department\": \"School of Education\",\n  \"status\": \"active\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/courses/{{courseId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "courses",
+                    "{{courseId}}"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Request includes required fields: course_code, name', () => pm.expect(JSON.parse(pm.request.body.raw)).to.include.all.keys('course_code', 'name'));"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Patch",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"course_code\": \"EDU-BA\",\n  \"name\": \"Education Studies\",\n  \"department\": \"School of Education\",\n  \"status\": \"active\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/courses/{{courseId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "courses",
+                    "{{courseId}}"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Request includes required fields: course_code, name', () => pm.expect(JSON.parse(pm.request.body.raw)).to.include.all.keys('course_code', 'name'));"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Delete",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/courses/{{courseId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "courses",
+                    "{{courseId}}"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "07 - Subjects",
+      "item": [
+        {
+          "name": "Subject CRUD and query options",
+          "item": [
+            {
+              "name": "Get all · pagination",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/subjects?page=1&limit=10",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "subjects"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Search",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/subjects?search=sample",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "subjects"
+                  ],
+                  "query": [
+                    {
+                      "key": "search",
+                      "value": "sample"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Filter",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/subjects?status=active",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "subjects"
+                  ],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "active"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Sort",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/subjects?sortBy=id&sortOrder=desc",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "subjects"
+                  ],
+                  "query": [
+                    {
+                      "key": "sortBy",
+                      "value": "id"
+                    },
+                    {
+                      "key": "sortOrder",
+                      "value": "desc"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Get by ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/subjects/{{subjectId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "subjects",
+                    "{{subjectId}}"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"course_id\": 1,\n  \"subject_code\": \"CS-401\",\n  \"name\": \"Responsible Computing\",\n  \"term\": \"Year 4 · Term 1\",\n  \"status\": \"active\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/subjects",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "subjects"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Request includes required fields: course_id, subject_code, name', () => pm.expect(JSON.parse(pm.request.body.raw)).to.include.all.keys('course_id', 'subject_code', 'name'));"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"course_id\": 1,\n  \"subject_code\": \"CS-401\",\n  \"name\": \"Responsible Computing\",\n  \"term\": \"Year 4 · Term 1\",\n  \"status\": \"active\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/subjects/{{subjectId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "subjects",
+                    "{{subjectId}}"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Request includes required fields: course_id, subject_code, name', () => pm.expect(JSON.parse(pm.request.body.raw)).to.include.all.keys('course_id', 'subject_code', 'name'));"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Patch",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"course_id\": 1,\n  \"subject_code\": \"CS-401\",\n  \"name\": \"Responsible Computing\",\n  \"term\": \"Year 4 · Term 1\",\n  \"status\": \"active\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/subjects/{{subjectId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "subjects",
+                    "{{subjectId}}"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Request includes required fields: course_id, subject_code, name', () => pm.expect(JSON.parse(pm.request.body.raw)).to.include.all.keys('course_id', 'subject_code', 'name'));"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Delete",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/subjects/{{subjectId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "subjects",
+                    "{{subjectId}}"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "08 - Feedback Questions",
+      "item": [
+        {
+          "name": "Question CRUD and query options",
+          "item": [
+            {
+              "name": "Get all · pagination",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/feedback-questions?page=1&limit=10",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "feedback-questions"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Search",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/feedback-questions?search=sample",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "feedback-questions"
+                  ],
+                  "query": [
+                    {
+                      "key": "search",
+                      "value": "sample"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Filter",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/feedback-questions?status=active",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "feedback-questions"
+                  ],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "active"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Sort",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/feedback-questions?sortBy=id&sortOrder=desc",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "feedback-questions"
+                  ],
+                  "query": [
+                    {
+                      "key": "sortBy",
+                      "value": "id"
+                    },
+                    {
+                      "key": "sortOrder",
+                      "value": "desc"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Get by ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/feedback-questions/{{questionId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "feedback-questions",
+                    "{{questionId}}"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"prompt\": \"How useful were the learning materials?\",\n  \"question_type\": \"rating\",\n  \"is_required\": true,\n  \"status\": \"active\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/feedback-questions",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "feedback-questions"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Request includes required fields: prompt, question_type', () => pm.expect(JSON.parse(pm.request.body.raw)).to.include.all.keys('prompt', 'question_type'));"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"prompt\": \"How useful were the learning materials?\",\n  \"question_type\": \"rating\",\n  \"is_required\": true,\n  \"status\": \"active\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/feedback-questions/{{questionId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "feedback-questions",
+                    "{{questionId}}"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Request includes required fields: prompt, question_type', () => pm.expect(JSON.parse(pm.request.body.raw)).to.include.all.keys('prompt', 'question_type'));"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Patch",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"prompt\": \"How useful were the learning materials?\",\n  \"question_type\": \"rating\",\n  \"is_required\": true,\n  \"status\": \"active\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/feedback-questions/{{questionId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "feedback-questions",
+                    "{{questionId}}"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Request includes required fields: prompt, question_type', () => pm.expect(JSON.parse(pm.request.body.raw)).to.include.all.keys('prompt', 'question_type'));"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Delete",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/feedback-questions/{{questionId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "feedback-questions",
+                    "{{questionId}}"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "09 - Feedback Forms",
+      "item": [
+        {
+          "name": "Form CRUD and query options",
+          "item": [
+            {
+              "name": "Get all · pagination",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/feedback-forms?page=1&limit=10",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "feedback-forms"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Search",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/feedback-forms?search=sample",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "feedback-forms"
+                  ],
+                  "query": [
+                    {
+                      "key": "search",
+                      "value": "sample"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Filter",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/feedback-forms?status=active",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "feedback-forms"
+                  ],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "active"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Sort",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/feedback-forms?sortBy=id&sortOrder=desc",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "feedback-forms"
+                  ],
+                  "query": [
+                    {
+                      "key": "sortBy",
+                      "value": "id"
+                    },
+                    {
+                      "key": "sortOrder",
+                      "value": "desc"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Get by ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/feedback-forms/{{formId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "feedback-forms",
+                    "{{formId}}"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Spring feedback check-in\",\n  \"description\": \"Share feedback on this class.\",\n  \"course_id\": 1,\n  \"subject_id\": 1,\n  \"teacher_id\": 1,\n  \"status\": \"draft\",\n  \"question_ids\": [\n    1,\n    2,\n    3\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/feedback-forms",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "feedback-forms"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Request includes required fields: title, course_id, subject_id, teacher_id', () => pm.expect(JSON.parse(pm.request.body.raw)).to.include.all.keys('title', 'course_id', 'subject_id', 'teacher_id'));"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Update",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Spring feedback check-in\",\n  \"description\": \"Share feedback on this class.\",\n  \"course_id\": 1,\n  \"subject_id\": 1,\n  \"teacher_id\": 1,\n  \"status\": \"draft\",\n  \"question_ids\": [\n    1,\n    2,\n    3\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/feedback-forms/{{formId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "feedback-forms",
+                    "{{formId}}"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Request includes required fields: title, course_id, subject_id, teacher_id', () => pm.expect(JSON.parse(pm.request.body.raw)).to.include.all.keys('title', 'course_id', 'subject_id', 'teacher_id'));"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Patch",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Spring feedback check-in\",\n  \"description\": \"Share feedback on this class.\",\n  \"course_id\": 1,\n  \"subject_id\": 1,\n  \"teacher_id\": 1,\n  \"status\": \"draft\",\n  \"question_ids\": [\n    1,\n    2,\n    3\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/feedback-forms/{{formId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "feedback-forms",
+                    "{{formId}}"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Request includes required fields: title, course_id, subject_id, teacher_id', () => pm.expect(JSON.parse(pm.request.body.raw)).to.include.all.keys('title', 'course_id', 'subject_id', 'teacher_id'));"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Delete",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/feedback-forms/{{formId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "feedback-forms",
+                    "{{formId}}"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                      "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Get form questions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/feedback-forms/{{formId}}/questions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "feedback-forms",
+                "{{formId}}",
+                "questions"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                  "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Replace form questions",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"question_ids\": [\n    1,\n    2,\n    3\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/feedback-forms/{{formId}}/questions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "feedback-forms",
+                "{{formId}}",
+                "questions"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                  "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "10 - Feedback Responses",
+      "item": [
+        {
+          "name": "Get all responses",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/feedback-responses?page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "feedback-responses"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                  "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get response by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/feedback-responses/{{responseId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "feedback-responses",
+                "{{responseId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                  "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Submit feedback",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"form_id\": 1,\n  \"answers\": [\n    {\n      \"question_id\": 1,\n      \"rating_value\": 5\n    },\n    {\n      \"question_id\": 2,\n      \"choice_value\": \"About right\"\n    },\n    {\n      \"question_id\": 3,\n      \"text_value\": \"The examples were helpful.\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/feedback-responses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "feedback-responses"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                  "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Replace response answers",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"answers\": [\n    {\n      \"question_id\": 1,\n      \"rating_value\": 4\n    },\n    {\n      \"question_id\": 2,\n      \"choice_value\": \"About right\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/feedback-responses/{{responseId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "feedback-responses",
+                "{{responseId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                  "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Patch response answers",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"answers\": [\n    {\n      \"question_id\": 1,\n      \"rating_value\": 4\n    },\n    {\n      \"question_id\": 2,\n      \"choice_value\": \"About right\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/feedback-responses/{{responseId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "feedback-responses",
+                "{{responseId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                  "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete response",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/feedback-responses/{{responseId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "feedback-responses",
+                "{{responseId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                  "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "11 - Reports",
+      "item": [
+        {
+          "name": "Feedback report · all dimensions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/reports/feedback",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reports",
+                "feedback"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                  "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Teacher-wise report",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/reports/feedback?teacher_id=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reports",
+                "feedback"
+              ],
+              "query": [
+                {
+                  "key": "teacher_id",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                  "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Subject-wise report",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/reports/feedback?subject_id=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reports",
+                "feedback"
+              ],
+              "query": [
+                {
+                  "key": "subject_id",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                  "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Course-wise report",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/reports/feedback?course_id=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reports",
+                "feedback"
+              ],
+              "query": [
+                {
+                  "key": "course_id",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('Response has the standard success flag', () => pm.expect(pm.response.json()).to.have.property('success', true));",
+                  "pm.test('Response includes a data field', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
